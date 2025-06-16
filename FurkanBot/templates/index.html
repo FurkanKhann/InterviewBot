@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Furkan Voice Bot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 60px;
+      background: #f5f7fa;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+
+    #loader {
+      display: none;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    p {
+      font-size: 18px;
+    }
+
+    audio {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎤 Ask something to Furkan</h2>
+  <button id="startButton">🎙️ Start Voice Input</button>
+  <div id="loader">⏳ Furkan is thinking...</div>
+
+  <p><strong>You asked:</strong> <span id="userText"></span></p>
+  <p><strong>Furkan says:</strong> <span id="botReply"></span></p>
+  <audio id="botAudio" controls></audio>
+ 
+<script>
+    const startButton = document.getElementById('startButton');
+    const userTextSpan = document.getElementById('userText');
+    const botReplySpan = document.getElementById('botReply');
+    const botAudio = document.getElementById('botAudio');
+    const loader = document.getElementById('loader');
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+
+    let isRecognizing = false;
+    let recognitionTimeout;
+
+    recognition.onstart = () => {
+      isRecognizing = true;
+      startButton.textContent = '🎧 Listening...';
+
+      // 🧹 Clear previous output
+      userTextSpan.textContent = '';
+      botReplySpan.textContent = '';
+      botAudio.src = '';
+      loader.style.display = 'none';
+
+      // ⏱️ Stop listening after 5 seconds
+      recognitionTimeout = setTimeout(() => {
+        recognition.stop();
+      }, 5000);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      userTextSpan.textContent = transcript;
+      askFurkan(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      isRecognizing = false;
+      clearTimeout(recognitionTimeout);
+      recognition.abort();
+      startButton.textContent = '🎙️ Start Voice Input';
+    };
+
+    recognition.onend = () => {
+      isRecognizing = false;
+      clearTimeout(recognitionTimeout);
+      startButton.textContent = '🎙️ Start Voice Input';
+    };
+
+    startButton.addEventListener('click', () => {
+      if (!isRecognizing) {
+        recognition.start();
+      } else {
+        recognition.stop();
+      }
+    });
+
+    async function askFurkan(question) {
+      loader.style.display = 'block';
+      try {
+        const res = await fetch('http://localhost:5000/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: question })
+        });
+
+        const data = await res.json();
+        botReplySpan.textContent = data.reply;
+        loader.style.display = 'none';
+
+        if (data.audio_base64) {
+          botAudio.src = 'data:audio/mp3;base64,' + data.audio_base64;
+          botAudio.play();
+        }
+      } catch (err) {
+        console.error("❌ Error fetching from Flask:", err);
+        loader.textContent = '❌ Failed to get response from server.';
+      }
+    }
+</script>
+</body>
+</html>
