@@ -1,32 +1,27 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+from talker import talker
 from gtts import gTTS
 import tempfile
 import base64
-from talker import talker  # This should be in talker.py
-from flask_cors import CORS
+import os
 
 app = Flask(__name__)
-CORS(app)  # Allow frontend to access this API
+CORS(app)
 
-# Optional route to test if server is alive
 @app.route('/')
 def home():
-    return "✅ Voice bot is running..."
+    return render_template('index.html')  # serve frontend
 
 @app.route('/ask', methods=['POST'])
 def ask():
-    data = request.get_json()
-    user_message = data.get('message', '')
+    user_message = request.json.get('message', '')
 
     if not user_message:
         return jsonify({"error": "No message received"}), 400
 
-    # Get response from Gemini via talker
-    
     response_text = talker(user_message)
-    print(response_text)
 
-    # Convert to speech using gTTS
     tts = gTTS(response_text)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
         tts.save(f.name)
@@ -39,5 +34,5 @@ def ask():
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
