@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 # Load .env
 load_dotenv()
-genai.configure(api_key=os.getenv("gemini_api_key"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 app = Flask(__name__)
