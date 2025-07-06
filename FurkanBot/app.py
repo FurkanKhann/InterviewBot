@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 # Load .env
 load_dotenv()
-genai.configure(api_key="AIzaSyAIe4WuwqXILnauHuQaJ1uFeyv1hCPRHpw")
+genai.configure(api_key="")
 
 app = Flask(__name__)
 CORS(app)
